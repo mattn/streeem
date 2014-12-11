@@ -1,4 +1,4 @@
-# Streeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeem
+# Streeeeeeeeeeeeeeeeeeeeeeeeeeeem
 
 ## Synopsis
 
