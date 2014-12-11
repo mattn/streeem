@@ -27,7 +27,7 @@ seq(100) | {|x|
 	`)
 */
 	scanner.Init(`
-seq
+seq(100)
 	`)
 	_, err := parser.Parse(scanner)
 	if err != nil {

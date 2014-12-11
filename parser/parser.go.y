@@ -336,6 +336,11 @@ expr :
 		$$ = &ast.BinOpExpr{Lhs: $1, Operator: "&&", Rhs: $3}
 		$$.SetPosition($1.Position())
 	}
+	| IDENT '(' exprs ')'
+	{
+		$$ = &ast.CallExpr{Name: $1.Lit, SubExprs: $3}
+		$$.SetPosition($1.Position())
+	}
 	| expr '[' expr ']'
 	{
 		$$ = &ast.ItemExpr{Value: $1, Index: $3}
