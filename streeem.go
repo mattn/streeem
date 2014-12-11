@@ -8,7 +8,6 @@ import (
 
 func main() {
 	scanner := new(parser.Scanner)
-/*
 	scanner.Init(`
 seq(100) | {|x|
  if x % 15 == 0 {
@@ -24,10 +23,6 @@ seq(100) | {|x|
    x
  }
 } | STDOUT
-	`)
-*/
-	scanner.Init(`
-seq(100)
 	`)
 	_, err := parser.Parse(scanner)
 	if err != nil {

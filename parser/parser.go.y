@@ -196,6 +196,10 @@ expr :
 	{
 		$$ = &ast.FuncExpr{Args: $3, Stmts: $5}
 	}
+	| '{' stmts '}'
+	{
+		$$ = &ast.FuncExpr{Stmts: $2}
+	}
 	| '[' exprs ']'
 	{
 		$$ = &ast.ArrayExpr{Exprs: $2}
