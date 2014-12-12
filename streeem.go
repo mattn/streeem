@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/mattn/streeem/parser"
+	"github.com/mattn/streeem/vm"
 	"log"
 )
 
@@ -24,11 +25,17 @@ seq(100) | {|x|
  }
 } | STDOUT
 	`)
-	_, err := parser.Parse(scanner)
+	stmts, err := parser.Parse(scanner)
 	if err != nil {
 		if e, ok := err.(*parser.Error); ok {
 			log.Fatal(e.Error())
 		}
 	}
-	fmt.Println("Syntax OK")
+	env := vm.NewEnv()
+
+	v, err := vm.Run(stmts, env)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Println(v.Interface())
 }
