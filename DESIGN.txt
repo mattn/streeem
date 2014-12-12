@@ -1,0 +1,62 @@
+All of interface returns two connection similar to ReadWriter. But some
+function of constant value have only one of them. For example, seq(100) don't
+read any input. STDIN also. STDOUT don't write any thing. But input will be
+written in console. Below is a pipeline.
+
+seq(100) -> {|x| ... } -> STDOUT
+
+# seq(100)
+```go
+type IO struct {
+   rc chan interface{}
+   wc chan interface{}
+}
+
+type Seq struct {
+   IO
+   current int
+   max int
+}
+
+func (s *Seq) ReadWrite() error {
+    if s.current < s.max {
+        s.current += 1
+        s.wc <- s.current
+        return nil
+    }
+    return io.EOF
+}
+```
+
+# {|x| ...}
+```go
+type Func struct {
+   IO
+   f FuncExpr
+}
+
+func (f *Func) ReadWrite() (err error) {
+    defer func() {
+        if e := recover(); e != nil {
+            err = e
+        }
+    }()
+    f.wc <- f.Invoke(<- f.rc)
+    return nil
+}
+```
+
+# STDOUT
+```go
+type OUT struct {
+   IO
+   w io.Writer
+}
+
+var STDOUT = NewOut(os.Stdout)
+
+func (o *OUT) ReadWrite() error {
+    _, err := o.w.Write(fmt.Sprint(<-o.rc))
+    return err
+}
+```
