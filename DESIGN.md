@@ -67,7 +67,7 @@ func (o *OUT) ReadWrite() error {
 
 `seq(100)` - goroutine - `{|x| ...}` - goroutine - `STDOUT`
 
-```
+```go
 go func() {
     for {
         err := item.ReadWrite()
