@@ -68,13 +68,20 @@ func (o *OUT) ReadWrite() error {
 `seq(100)` - goroutine - `{|x| ...}` - goroutine - `STDOUT`
 
 ```go
-go func() {
-    for {
-        err := item.ReadWrite()
-        if err != nil {
-            ec <- err
-            break
-        }
-	}
-}()
+var wg sync.WaitGroup
+for _, item := range pipeline {
+    wg.Add(1)
+    go func(item *IO) {
+        for {
+            err := item.ReadWrite()
+            if err != nil {
+                ec <- err
+                break
+            }
+	    }
+        wg.Done()
+    }(item)
+}
+wg.Wait()
+err := <-ec
 ```
