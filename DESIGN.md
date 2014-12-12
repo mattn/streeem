@@ -3,7 +3,9 @@ constant value handle just one in both. For example, seq(100) don't read any
 input. STDIN also. STDOUT don't write any thing. But input will be written in
 console. Below is a pipeline.
 
+```
 seq(100) -> {|x| ... } -> STDOUT
+```
 
 # seq(100)
 ```go
