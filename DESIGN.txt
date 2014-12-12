@@ -1,7 +1,7 @@
-All of interface returns two connection similar to ReadWriter. But some
-function of constant value have only one of them. For example, seq(100) don't
-read any input. STDIN also. STDOUT don't write any thing. But input will be
-written in console. Below is a pipeline.
+All of interface has two connection similar to ReadWriter. Some function or
+constant value handle just one in both. For example, seq(100) don't read any
+input. STDIN also. STDOUT don't write any thing. But input will be written in
+console. Below is a pipeline.
 
 seq(100) -> {|x| ... } -> STDOUT
 
