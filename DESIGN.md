@@ -62,3 +62,19 @@ func (o *OUT) ReadWrite() error {
     return err
 }
 ```
+
+# JOIN
+
+`seq(100)` - goroutine - `{|x| ...}` - goroutine - `STDOUT`
+
+```
+go func() {
+    for {
+        err := item.ReadWrite()
+        if err != nil {
+            ec <- err
+            break
+        }
+	}
+}()
+```
