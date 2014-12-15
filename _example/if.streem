@@ -1,0 +1,9 @@
+#!streeem
+
+[1,2,3] | {|x|
+  if (x | 2) == 2 {
+    4
+  } else {
+    x
+  }
+} | STDOUT

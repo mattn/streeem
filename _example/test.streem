@@ -1,0 +1,2 @@
+#!streeem
+seq(3) | STDOUT
