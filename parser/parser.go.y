@@ -23,7 +23,7 @@ import (
 	tok                    ast.Token
 }
 
-%token<tok> IDENT NUMBER STRING ARRAY VARARG RETURN VAR THROW IF ELSE FOR IN EQEQ NEQ GE LE OROR ANDAND NEW TRUE FALSE NIL MODULE PLUSEQ MINUSEQ MULEQ DIVEQ ANDEQ OREQ BREAK CONTINUE PLUSPLUS MINUSMINUS POW SHIFTLEFT SHIFTRIGHT
+%token<tok> IDENT NUMBER STRING ARRAY VARARG RETURN VAR IF ELSE FOR IN EQEQ NEQ GE LE OROR ANDAND NEW TRUE FALSE NIL MODULE PLUSEQ MINUSEQ MULEQ DIVEQ ANDEQ OREQ BREAK CONTINUE PLUSPLUS MINUSMINUS POW SHIFTLEFT SHIFTRIGHT
 
 %right '='
 %right '?' ':'
@@ -32,6 +32,7 @@ import (
 %left IDENT
 %nonassoc EQEQ NEQ ','
 %left '>' GE '<' LE SHIFTLEFT SHIFTRIGHT
+%left '|'
 
 %left '+' '-' PLUSPLUS MINUSMINUS
 %left '*' '/' '%'
@@ -68,7 +69,17 @@ stmts :
 		}
 	}
 
-stmt : expr
+stmt : expr '|' expr
+	{
+		$$ = &ast.PipeLine{Exprs: []ast.Expr{$1, $3}}
+		$$.SetPosition($1.Position())
+	}
+	| stmt '|' expr
+	{
+		$1.(*ast.PipeLine).Exprs = append($1.(*ast.PipeLine).Exprs, $3)
+		$$.SetPosition($1.Position())
+	}
+	| expr
 	{
 		$$ = &ast.ExprStmt{Expr: $1}
 		$$.SetPosition($1.Position())
@@ -195,10 +206,6 @@ expr :
 	| '{' '|' expr_idents '|' stmts '}'
 	{
 		$$ = &ast.FuncExpr{Args: $3, Stmts: $5}
-	}
-	| '{' stmts '}'
-	{
-		$$ = &ast.FuncExpr{Stmts: $2}
 	}
 	| '[' exprs ']'
 	{

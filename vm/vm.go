@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/mattn/streeem/ast"
 	"github.com/mattn/streeem/parser"
+	"io"
 	"math"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var NilValue = reflect.ValueOf((*interface{})(nil))
@@ -51,6 +53,74 @@ func NewError(pos ast.Pos, err error) error {
 
 func (e *Error) Error() string {
 	return e.Message
+}
+
+type ReadWriter interface {
+	Connect(chan interface{}) chan interface{}
+	Close()
+	ReadWrite() error
+}
+
+type IO struct {
+	ReadWriter
+	R chan interface{}
+	W chan interface{}
+}
+
+func (io *IO) Connect(r chan interface{}) chan interface{} {
+	io.R = r
+	io.W = make(chan interface{})
+	return io.W
+}
+
+func (io *IO) Close() {
+	if io.W != nil {
+		close(io.W)
+	}
+}
+
+type FuncIO struct {
+	IO
+	f reflect.Value
+}
+
+func (f *FuncIO) ReadWrite() (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if ee, ok := e.(error); ok {
+				err = ee
+			}
+		}
+	}()
+	v, ok := <-f.R
+	if ok {
+		rv := f.f.Call([]reflect.Value{reflect.ValueOf(reflect.ValueOf(v))})
+		f.W <- rv[0].Interface().(reflect.Value).Interface()
+		return nil
+	}
+	return io.EOF
+}
+
+type ArrayIO struct {
+	IO
+	c int
+	a reflect.Value
+}
+
+func (a *ArrayIO) ReadWrite() (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if ee, ok := e.(error); ok {
+				err = ee
+			}
+		}
+	}()
+	if a.c < a.a.Len() {
+		a.W <- a.a.Index(a.c).Interface()
+		a.c++
+		return nil
+	}
+	return io.EOF
 }
 
 type Func func(args ...reflect.Value) (reflect.Value, error)
@@ -193,6 +263,60 @@ func Run(stmts []ast.Stmt, env *Env) (reflect.Value, error) {
 	return rv, nil
 }
 
+func pipeLine(stmt *ast.PipeLine, env *Env) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if ee, ok := e.(error); ok {
+				err = ee
+			}
+		}
+	}()
+	pl := []ReadWriter{}
+	var oc chan interface{}
+	for _, item := range stmt.Exprs {
+		var rw ReadWriter
+		rv, err := invokeExpr(item, env)
+		if err != nil {
+			return NewError(stmt, err)
+		}
+		switch rv.Kind() {
+		case reflect.Func:
+			rw = &FuncIO{IO{}, rv}
+		case reflect.Slice:
+			rw = &ArrayIO{IO{}, 0, rv}
+		default:
+			if iv, ok := rv.Interface().(ReadWriter); ok {
+				rw = iv
+			} else {
+				return NewError(stmt, errors.New("invalid ReadWriter"))
+			}
+		}
+		oc = rw.Connect(oc)
+		pl = append(pl, rw)
+	}
+
+	var wg sync.WaitGroup
+	for _, rw := range pl {
+		wg.Add(1)
+		var ge error
+		go func(item ReadWriter) {
+			defer wg.Done()
+			for {
+				err = item.ReadWrite()
+				if err != nil {
+					if err != io.EOF {
+						ge = err
+					}
+					item.Close()
+					break
+				}
+			}
+		}(rw)
+	}
+	wg.Wait()
+	return nil
+}
+
 func RunSingleStmt(stmt ast.Stmt, env *Env) (reflect.Value, error) {
 	switch stmt := stmt.(type) {
 	case *ast.ExprStmt:
@@ -274,6 +398,9 @@ func RunSingleStmt(stmt ast.Stmt, env *Env) (reflect.Value, error) {
 			}
 		}
 		return reflect.ValueOf(rvs), nil
+	case *ast.PipeLine:
+		err := pipeLine(stmt, env)
+		return reflect.ValueOf(nil), err
 	default:
 		return NilValue, NewStringError(stmt, "Unknown statement")
 	}

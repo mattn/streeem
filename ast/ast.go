@@ -165,3 +165,8 @@ type ItemExpr struct {
 	Value Expr
 	Index Expr
 }
+
+type PipeLine struct {
+	StmtImpl
+	Exprs []Expr
+}
