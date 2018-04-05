@@ -65,7 +65,7 @@ func (i *STDIN) ReadWrite() (err error) {
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage of %s: [file]", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage of %s: [file]\n", os.Args[0])
 		os.Exit(1)
 	}
 	b, err := ioutil.ReadFile(os.Args[1])
